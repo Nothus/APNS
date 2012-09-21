@@ -16,11 +16,11 @@ module APNS
   private
 
     def configure_ssl(pem, pass)
-      raise "The path to your pem file does not exist!" unless File.exist?(pem)
+      #raise "The path to your pem file does not exist!" unless File.exist?(pem)
 
       context      = OpenSSL::SSL::SSLContext.new
-      context.cert = OpenSSL::X509::Certificate.new(File.read(pem))
-      context.key  = OpenSSL::PKey::RSA.new(File.read(pem), pass)
+      context.cert = OpenSSL::X509::Certificate.new(pem)
+      context.key  = OpenSSL::PKey::RSA.new(pem, pass)
     
       self.ssl     = OpenSSL::SSL::SSLSocket.new(socket, context)
       ssl.connect
@@ -29,7 +29,19 @@ module APNS
   end
 
   class NotificationConnection < Connection
-    def send_notifications(notifications)      
+    APNS_DEFAULT_PUSH_HOST = 'gateway.sandbox.push.apple.com'
+    APNS_DEFAULT_PUSH_PORT = 2195
+
+    def initialize(opts)
+      opts[:host] ||= APNS_DEFAULT_PUSH_HOST
+      opts[:port] ||= APNS_DEFAULT_PUSH_PORT
+
+      self.socket = TCPSocket.new(opts[:host], opts[:port])
+
+      configure_ssl opts[:pem], opts[:pass]
+    end
+
+    def send_notifications(notifications)
       notifications.each do |n|
         ssl.write n.packaged_notification
       end
@@ -37,6 +49,17 @@ module APNS
   end
 
   class FeedbackConnection < Connection
+    APNS_DEFAULT_FEEDBACK_HOST = 'feedback.sandbox.push.apple.com'
+    APNS_DEFAULT_FEEDBACK_PORT = 2196
+
+    def initialize(opts)
+      opts[:host] ||= APNS_DEFAULT_FEEDBACK_HOST
+      opts[:port] ||= APNS_DEFAULT_FEEDBACK_PORT
+
+      self.socket = TCPSocket.new(opts[:host], opts[:port])
+
+      configure_ssl opts[:pem], opts[:pass]
+    end
     def feedback
       apns_feedback = []
       
