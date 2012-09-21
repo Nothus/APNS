@@ -1,2 +1,14 @@
 .DS_Store
 pkg
+
+.idea/
+.rvmrc
+
+# Emacs
+*~
+.*~
+\#*\#
+.\#*
+
+
+
